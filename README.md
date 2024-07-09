@@ -20,7 +20,6 @@ git clone https://github.com/alfiTH/vl6180x_multi.git && cd vl6180x_multi
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
 
 ```
 3. Install the package

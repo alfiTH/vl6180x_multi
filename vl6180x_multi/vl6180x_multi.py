@@ -16,11 +16,7 @@ import busio
 
 import adafruit_vl6180x
 
-try:
-    from RPi import GPIO
-except RuntimeError:
-    print("Error importing RPi.GPIO! Superuser privileges required!")
-    sys.exit(1)
+from RPi import GPIO
 
 # Register for changing the device bus address
 SUBORDINATE_ADDR_REG = 0x212
@@ -92,7 +88,7 @@ class MultiSensor:
                 ce_gpios, new_i2c_addresses, offsets, default_i2c_address
             )
         except Exception as e:
-            print(f"Initialization error: {e}")
+            print(f"\Initialisation error, you may need to run the command sudo chmod 666 /dev/gpio*. \n\n{e}")
             raise
 
     def _realloc_addr(self, channels, i2c_addresses, offsets, default_i2c_address):
