@@ -27,7 +27,8 @@ class MultiSensor:
 
     def __init__(
         self,
-        ce_gpios: list,
+        ids: list,
+        gpios: list,
         new_i2c_addresses: list,
         offsets: list = None,
         mode_gpio=GPIO.BCM,
@@ -37,7 +38,8 @@ class MultiSensor:
         Initialize the MultiSensor instance.
 
         Parameters:
-        - ce_gpios (list[int]): GPIO pin numbers used to control each sensor.
+        - ids (list[str]): id of each sensor.
+        - gpios (list[int]): GPIO pin numbers used to control each sensor.
         - new_i2c_addresses (list[int]): New I2C addresses to assign to each sensor.
         - offsets (list[int], optional): Offset values for each sensor (default is None).
         - mode_gpio (int, optional): GPIO mode to use (GPIO.BCM or GPIO.BOARD, default is GPIO.BCM).
@@ -51,29 +53,34 @@ class MultiSensor:
 
 
         #Control parameters
-        assert isinstance(ce_gpios, list), "ce_gpios must be a list"
+        assert isinstance(gpios, list), "gpios must be a list"
+
+        assert isinstance(ids, list), "ids must be a list"
+        assert len(gpios) == len(ids), "gpios and ids must be the same size"
+
         assert isinstance(new_i2c_addresses, list), "new_i2c_addresses must be a list"
-        assert len(ce_gpios) == len(
-            new_i2c_addresses
-        ), "ce_gpios and new_i2c_addresses must be the same size"
-        assert isinstance(offsets, list), "offsets must be a list"
+        assert len(gpios) == len(
+            new_i2c_addresses), "gpios and new_i2c_addresses must be the same size"
 
-        if offsets is None:
-            offsets = [0] * len(ce_gpios)
-
-        assert len(ce_gpios) == len(
-            offsets
-        ), "ce_gpios and offsets must be the same size"
         assert all(
             0 <= addr <= 127 for addr in new_i2c_addresses
         ), "new_i2c_addresses must be in the range 0-127 inclusive"
+
+        assert isinstance(offsets, list), "offsets must be a list"
+
+        assert len(gpios) == len(
+            offsets
+        ), "ce_gpios and offsets must be the same size"
+
         assert mode_gpio in (
             GPIO.BCM,
             GPIO.BOARD,
         ), "mode_gpio must be GPIO.BCM or GPIO.BOARD"
+
         assert isinstance(
             default_i2c_address, int
         ), "default_i2c_address must be an int"
+
         assert (
             0 <= default_i2c_address <= 127
         ), "default_i2c_address must be in the range 0-127 inclusive"
@@ -82,13 +89,13 @@ class MultiSensor:
         #Instance sensors
         try:
             GPIO.setmode(mode_gpio)
-            GPIO.setup(ce_gpios, GPIO.OUT)
-            GPIO.output(ce_gpios, GPIO.LOW)
-            self.sensors = self._realloc_addr(
-                ce_gpios, new_i2c_addresses, offsets, default_i2c_address
-            )
+            GPIO.setup(gpios, GPIO.OUT)
+            GPIO.output(gpios, GPIO.LOW)
+            self.sensors = dict(zip(ids, self._realloc_addr(
+                gpios, new_i2c_addresses, offsets, default_i2c_address
+            )))
         except Exception as e:
-            print(f"\Initialisation error, you may need to run the command sudo chmod 666 /dev/gpio*. \n\n{e}")
+            print(f"Initialisation error, you may need to run the command sudo chmod 666 /dev/gpio*. \n\n{e}")
             raise
 
     def _realloc_addr(self, channels, i2c_addresses, offsets, default_i2c_address):
@@ -155,7 +162,7 @@ class MultiSensor:
 
         return sensors
 
-    def get_range(self, idx_sensor):
+    def get_range(self, id_sensor: str):
         """
         Get the range from a specific sensor.
 
@@ -167,15 +174,15 @@ class MultiSensor:
 
         """
         try:
-            return self.sensors[idx_sensor].range
+            return self.sensors[id_sensor].range
         except IndexError:
-            print(f"Invalid sensor index: {idx_sensor}")
+            print(f"Invalid sensor index: {id_sensor}")
             return None
         except Exception as e:
-            print(f"Error retrieving range from sensor {idx_sensor}: {e}")
+            print(f"Error retrieving range from sensor {id_sensor}: {e}")
             return None
 
-    def get_lux(self, idx_sensor, gain: int) -> float:
+    def get_lux(self, id_sensor:str, gain: int) -> float:
         """
         Get the lux value from a specific sensor.
 
@@ -188,14 +195,14 @@ class MultiSensor:
 
         """
         try:
-            return self.sensors[idx_sensor].read_lux(gain)
+            return self.sensors[id_sensor].read_lux(gain)
         except IndexError:
-            print(f"Invalid sensor index: {idx_sensor}")
+            print(f"Invalid sensor index: {id_sensor}")
         except Exception as e:
-            print(f"Error retrieving lux value from sensor {idx_sensor}: {e}")
+            print(f"Error retrieving lux value from sensor {id_sensor}: {e}")
         return None
 
-    def get_range_status(self, idx_sensor: int) -> int:
+    def get_range_status(self, id_sensor: str) -> int:
         """
         Get the range status from a specific sensor.
 
@@ -207,9 +214,9 @@ class MultiSensor:
 
         """
         try:
-            return self.sensors[idx_sensor].range_status
+            return self.sensors[id_sensor].range_status
         except IndexError:
-            print(f"Invalid sensor index: {idx_sensor}")
+            print(f"Invalid sensor index: {id_sensor}")
         except Exception as e:
-            print(f"Error retrieving range status from sensor {idx_sensor}: {e}")
+            print(f"Error retrieving range status from sensor {id_sensor}: {e}")
         return None
